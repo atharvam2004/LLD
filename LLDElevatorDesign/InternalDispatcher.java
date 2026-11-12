@@ -4,12 +4,12 @@ import java.util.List;
 
 public class InternalDispatcher {
 
-    private List<ElevatorController> elevatorControllerList;
+    List<ElevatorController> elevatorControllerList = ElevatorCreator.elevatorControllerList;
 
     public InternalDispatcher() {}
 
     public InternalDispatcher(List<ElevatorController> elevatorControllerList) {
-        this.elevatorControllerList = elevatorControllerList;
+        this.elevatorControllerList = elevatorControllerList != null ? elevatorControllerList : ElevatorCreator.elevatorControllerList;
     }
 
     public void setElevatorControllerList(List<ElevatorController> elevatorControllerList) {

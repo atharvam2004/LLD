@@ -24,11 +24,12 @@ public class Main {
         List<ElevatorController> elevatorControllers = ElevatorCreator.createElevatorControllers(2);
 
         // 3. Clean Architecture: Building acts as Aggregate Root
-        // Building owns the floors, the elevator bank, and injects the shared ExternalDispatcher
+        // Building owns the floors, the elevator bank, and injects the shared
+        // ExternalDispatcher
         Building building = new Building(floorList, elevatorControllers, new NearestElevatorSelectionStrategy());
 
         System.out.println("=== Clean Architecture: Elevators Belong to the Building ===");
-        System.out.println("Building initialized with " + building.getAllFloorList().size() + " floors and " 
+        System.out.println("Building initialized with " + building.getAllFloorList().size() + " floors and "
                 + building.getElevatorControllerList().size() + " elevator controllers.");
 
         // 4. Passenger at Floor 3 calls an elevator going UP

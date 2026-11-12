@@ -6,19 +6,19 @@ import java.util.List;
 public class ExternalDispatcher {
 
     private ElevatorSelectionStrategy selectionStrategy;
-    private List<ElevatorController> elevatorControllerList;
+    List<ElevatorController> elevatorControllerList = ElevatorCreator.elevatorControllerList;
 
     public ExternalDispatcher(List<ElevatorController> elevatorControllerList) {
         this(elevatorControllerList, new OddEvenSelectionStrategy());
     }
 
     public ExternalDispatcher(List<ElevatorController> elevatorControllerList, ElevatorSelectionStrategy selectionStrategy) {
-        this.elevatorControllerList = elevatorControllerList != null ? elevatorControllerList : new ArrayList<>();
+        this.elevatorControllerList = elevatorControllerList != null ? elevatorControllerList : ElevatorCreator.elevatorControllerList;
         this.selectionStrategy = selectionStrategy != null ? selectionStrategy : new OddEvenSelectionStrategy();
     }
 
     public ExternalDispatcher() {
-        this(ElevatorCreator.createElevatorControllers(2), new OddEvenSelectionStrategy());
+        this(ElevatorCreator.elevatorControllerList, new OddEvenSelectionStrategy());
     }
 
     public void setSelectionStrategy(ElevatorSelectionStrategy selectionStrategy) {

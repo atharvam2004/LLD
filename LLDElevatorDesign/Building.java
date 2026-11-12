@@ -35,8 +35,16 @@ public class Building {
         }
     }
 
+    public void addFloors(Floor newFloor) {
+        addFloor(newFloor);
+    }
+
     public void removeFloor(Floor removeFloor) {
         floorList.remove(removeFloor);
+    }
+
+    public void removeFloors(Floor removeFloor) {
+        removeFloor(removeFloor);
     }
 
     public List<Floor> getAllFloorList() {

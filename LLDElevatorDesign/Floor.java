@@ -2,8 +2,8 @@ package com.conceptandcoding.LowLevelDesign.LLDElevatorDesign;
 
 public class Floor {
 
-    private int floorNumber;
-    private ExternalDispatcher externalDispatcher;
+    int floorNumber;
+    ExternalDispatcher externalDispatcher;
 
     public Floor(int floorNumber) {
         this.floorNumber = floorNumber;
