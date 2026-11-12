@@ -10,8 +10,9 @@ public class ElevatorController {
 
     public ElevatorController(ElevatorCar elevatorCar) {
         this.elevatorCar = elevatorCar;
-        upMinPQ = new PriorityQueue<>();
-        downMaxPQ = new PriorityQueue<>((a, b) -> b - a);
+        this.elevatorCar.elevatorController = this;
+        this.upMinPQ = new PriorityQueue<>();
+        this.downMaxPQ = new PriorityQueue<>((a, b) -> b - a);
     }
 
     public void submitExternalRequest(int floor, Direction direction) {

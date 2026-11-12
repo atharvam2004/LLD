@@ -1,20 +1,26 @@
 package com.conceptandcoding.LowLevelDesign.LLDElevatorDesign;
 
-
-
 public class InternalButtons {
 
-    InternalDispatcher dispatcher = new InternalDispatcher();
+    private InternalDispatcher dispatcher;
+    private int[] availableButtons = {1, 2, 3, 4, 5, 6, 7, 8, 9, 10};
+    private int buttonSelected;
 
-    int[] availableButtons = {1,2,3,4,5,6,7,8,9,10};
-    int buttonSelected;
-
-    void pressButton(int destination, ElevatorCar elevatorCar) {
-
-        //1.check if destination is in the list of available floors
-
-        //2.submit the request to the jobDispatcher
-        dispatcher.submitInternalRequest(destination, elevatorCar);
+    public InternalButtons() {
+        this.dispatcher = new InternalDispatcher();
     }
 
+    public InternalButtons(InternalDispatcher dispatcher) {
+        this.dispatcher = dispatcher;
+    }
+
+    public void setDispatcher(InternalDispatcher dispatcher) {
+        this.dispatcher = dispatcher;
+    }
+
+    public void pressButton(int destination, ElevatorCar elevatorCar) {
+        if (dispatcher != null) {
+            dispatcher.submitInternalRequest(destination, elevatorCar);
+        }
+    }
 }

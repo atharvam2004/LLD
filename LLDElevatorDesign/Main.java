@@ -7,6 +7,7 @@ public class Main {
 
     public static void main(String args[]) {
 
+        // 1. Setup Building Floors
         List<Floor> floorList = new ArrayList<>();
         Floor floor1 = new Floor(1);
         Floor floor2 = new Floor(2);
@@ -19,20 +20,31 @@ public class Main {
         floorList.add(floor4);
         floorList.add(floor5);
 
-        Building building = new Building(floorList);
+        // 2. Setup Elevator Bank (Cars & Controllers)
+        List<ElevatorController> elevatorControllers = ElevatorCreator.createElevatorControllers(2);
 
-        System.out.println("--- 1. Hall Call: Passenger at Floor 3 presses UP ---");
+        // 3. Clean Architecture: Building acts as Aggregate Root
+        // Building owns the floors, the elevator bank, and injects the shared ExternalDispatcher
+        Building building = new Building(floorList, elevatorControllers, new NearestElevatorSelectionStrategy());
+
+        System.out.println("=== Clean Architecture: Elevators Belong to the Building ===");
+        System.out.println("Building initialized with " + building.getAllFloorList().size() + " floors and " 
+                + building.getElevatorControllerList().size() + " elevator controllers.");
+
+        // 4. Passenger at Floor 3 calls an elevator going UP
+        System.out.println("\n--- 1. Hall Call: Passenger at Floor 3 presses UP ---");
         floor3.pressButton(Direction.UP);
 
-        // Process request with controller
-        ElevatorController controller1 = ElevatorCreator.elevatorControllerList.get(0);
+        // 5. Controller executes SCAN stops
+        ElevatorController controller1 = building.getElevatorControllerList().get(0);
         controller1.controlElevator();
 
-        System.out.println("--- 2. Inside Elevator Car 1: Passenger selects Floor 5 ---");
+        // 6. Passenger steps inside Elevator Car 1 and selects Floor 5
+        System.out.println("\n--- 2. Inside Elevator Car 1: Passenger selects Floor 5 ---");
         ElevatorCar car1 = controller1.elevatorCar;
         car1.pressButton(5);
         controller1.controlElevator();
 
-        System.out.println("--- Elevator service complete at Floor " + car1.currentFloor + " ---");
+        System.out.println("\n--- Service Complete: Elevator arrived at Floor " + car1.currentFloor + " ---");
     }
 }

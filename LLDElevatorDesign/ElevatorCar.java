@@ -2,25 +2,26 @@ package com.conceptandcoding.LowLevelDesign.LLDElevatorDesign;
 
 public class ElevatorCar {
 
-    int id;
-    ElevatorDisplay display;
-    InternalButtons internalButtons;
-    ElevatorState elevatorState;
-    int currentFloor;
-    Direction elevatorDirection;
-    ElevatorDoor elevatorDoor;
+    public int id;
+    public ElevatorDisplay display;
+    public InternalButtons internalButtons;
+    public ElevatorState elevatorState;
+    public int currentFloor;
+    public Direction elevatorDirection;
+    public ElevatorDoor elevatorDoor;
+    public ElevatorController elevatorController;
 
-    public ElevatorCar(){
+    public ElevatorCar() {
         display = new ElevatorDisplay();
         internalButtons = new InternalButtons();
         elevatorState = ElevatorState.IDLE;
         currentFloor = 0;
         elevatorDirection = Direction.UP;
         elevatorDoor = new ElevatorDoor();
-
     }
+
     public void showDisplay() {
-         display.showDisplay();
+        display.showDisplay();
     }
 
     public void pressButton(int destination) {
@@ -31,32 +32,36 @@ public class ElevatorCar {
         this.display.setDisplay(currentFloor, elevatorDirection);
     }
 
-    boolean moveElevator(Direction dir, int destinationFloor){
+    public boolean moveElevator(Direction dir, int destinationFloor) {
         int startFloor = currentFloor;
-        if(dir == Direction.UP) {
-            for(int i = startFloor; i<=destinationFloor; i++) {
+        this.elevatorDirection = dir;
+        this.elevatorState = ElevatorState.MOVING;
 
-                this.currentFloor = startFloor;
+        if (dir == Direction.UP) {
+            for (int i = startFloor; i <= destinationFloor; i++) {
+                this.currentFloor = i;
                 setDisplay();
                 showDisplay();
-                if(i == destinationFloor) {
+                if (i == destinationFloor) {
+                    this.elevatorDoor.openDoor();
+                    this.elevatorDoor.closeDoor();
                     return true;
                 }
             }
         }
 
-        if(dir == Direction.DOWN) {
-            for(int i = startFloor; i>=destinationFloor; i--) {
-
-                this.currentFloor = startFloor;
+        if (dir == Direction.DOWN) {
+            for (int i = startFloor; i >= destinationFloor; i--) {
+                this.currentFloor = i;
                 setDisplay();
                 showDisplay();
-                if(i == destinationFloor) {
+                if (i == destinationFloor) {
+                    this.elevatorDoor.openDoor();
+                    this.elevatorDoor.closeDoor();
                     return true;
                 }
             }
         }
         return false;
     }
-
 }

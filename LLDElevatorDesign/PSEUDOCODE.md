@@ -1,6 +1,7 @@
 # Elevator Design System - Invocation & Flow Pseudocode
 
 ## Design Patterns in Code
+- **Building as Aggregate Root (Clean Architecture)**: `Building` directly owns both `List<Floor>` and `List<ElevatorController>`. It injects the single shared `ExternalDispatcher` into all floors.
 - **Strategy Pattern**: `ElevatorSelectionStrategy` (`OddEvenSelectionStrategy`, `NearestElevatorSelectionStrategy`) dynamically determines which elevator services an external hall call.
 - **Dispatcher Pattern**: `ExternalDispatcher` handles outside hall calls; `InternalDispatcher` handles car button selections.
 - **Priority Queue Scheduling (SCAN/LOOK Algorithm)**: Segregates destinations into ascending (`upMinPQ`) and descending (`downMaxPQ`) heaps.
@@ -8,19 +9,27 @@
 
 ---
 
-## 1. System Setup & Initialization
+## 1. System Setup & Initialization (Clean Building Architecture)
 
 ```java
-// 1. Elevator cars and controllers are pooled via ElevatorCreator
-/* ElevatorCreator static initializer creates:
-   - ElevatorCar 1 -> wrapped in ElevatorController 1
-   - ElevatorCar 2 -> wrapped in ElevatorController 2
-   - Stored in ElevatorCreator.elevatorControllerList
-*/
-
-// 2. Setup Building Floors (Floor HAS-A ExternalDispatcher)
+// 1. Create Building Floors
 List<Floor> floors = List.of(new Floor(1), new Floor(2), new Floor(3), new Floor(4), new Floor(5));
-Building building = new Building(floors);
+
+// 2. Instantiate Elevator Bank (Cars & Controllers)
+List<ElevatorController> elevatorControllers = ElevatorCreator.createElevatorControllers(2);
+
+// 3. Building acts as the Aggregate Root
+// Building owns the floors, owns the elevator controllers, and wires the shared ExternalDispatcher
+Building building = new Building(floors, elevatorControllers, new NearestElevatorSelectionStrategy());
+
+/* Inside Building constructor:
+   - Sets this.elevatorControllerList = elevatorControllers;
+   - Initializes shared externalDispatcher:
+       this.externalDispatcher = new ExternalDispatcher(this.elevatorControllerList, strategy);
+   - Injects this.externalDispatcher into every Floor:
+       for (Floor f : floors) { f.setExternalDispatcher(this.externalDispatcher); }
+   All floors now share the EXACT same elevator controllers and dispatcher!
+*/
 ```
 
 ---
@@ -28,28 +37,28 @@ Building building = new Building(floors);
 ## 2. Dispatching Calls Flow
 
 ```java
-// [PATTERN: STRATEGY & DISPATCHER PATTERN - HALL CALL]
+// [PATTERN: DISPATCHER & STRATEGY PATTERN - HALL CALL]
 // Passenger at Floor 3 presses "UP":
-Floor floor3 = floors.get(2);
+Floor floor3 = building.getAllFloorList().get(2);
 floor3.pressButton(Direction.UP);
 
 /* Inside pressButton(Direction.UP):
-   1. floor3 delegates to ExternalDispatcher:
+   1. floor3 delegates to the shared ExternalDispatcher injected by Building:
       externalDispatcher.submitExternalRequest(3, Direction.UP);
    
    2. ExternalDispatcher delegates to ElevatorSelectionStrategy:
       ElevatorController controller = selectionStrategy.selectElevator(3, Direction.UP, elevatorControllerList);
-      // OddEvenSelectionStrategy picks ElevatorCar 1 (both floor 3 and car 1 are ODD)
+      // NearestElevatorSelectionStrategy picks the closest available car
    
-   3. Controller pushes request into PriorityQueue:
+   3. Selected Controller pushes request into its PriorityQueue:
       controller.upMinPQ.offer(3); // Queued for upward travel
 */
 
-// Process the call:
-controller.controlElevator(); // Elevator 1 travels to floor 3
+// Controller executes SCAN motion stops:
+controller.controlElevator(); // Elevator travels to Floor 3, opens/closes doors
 
 // [PATTERN: DISPATCHER PATTERN - INTERNAL CAR BUTTON]
-// Passenger boards Elevator 1 and selects Floor 5:
+// Passenger steps inside Elevator Car 1 and selects Floor 5:
 ElevatorCar car1 = controller.elevatorCar;
 car1.pressButton(5);
 
@@ -58,10 +67,10 @@ car1.pressButton(5);
       internalButtons.pressButton(5, car1);
    2. InternalButtons delegates to InternalDispatcher:
       internalDispatcher.submitInternalRequest(5, car1);
-   3. Routes to controller 1, which queues 5 into upMinPQ:
+   3. Directly queues destination 5 into controller 1's upMinPQ:
       controller.upMinPQ.offer(5);
 */
 
-// Controller processes motion loop:
-controller.controlElevator(); // Moves car1 up to floor 5, updates display, arrives at destination!
+// Controller moves car to destination:
+controller.controlElevator(); // Car moves up to Floor 5, updates display, arrives!
 ```

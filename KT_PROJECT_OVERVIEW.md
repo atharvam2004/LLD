@@ -251,28 +251,31 @@ src/main/java/com/conceptandcoding/LowLevelDesign/
 ---
 
 ### 5.5 LLDElevatorDesign
-- **Patterns**: Strategy Pattern (`ElevatorSelectionStrategy`), Dispatcher Pattern, Min/Max Heap Scheduling (LOOK/SCAN), Controller Pattern.
+- **Patterns**: Building Aggregate Root (Clean Architecture & DI), Strategy Pattern (`ElevatorSelectionStrategy`), Dispatcher Pattern, Min/Max Heap Scheduling (LOOK/SCAN), Controller Pattern.
 - **IS-A**:
   - `OddEvenSelectionStrategy`, `NearestElevatorSelectionStrategy` **IS-A** `ElevatorSelectionStrategy` (`implements`)
   - Enums `Direction` (`UP`, `DOWN`), `ElevatorState` (`MOVING`, `IDLE`).
 - **HAS-A**:
-  - `Building` **HAS-A** `List<Floor>`
-  - `Floor` **HAS-A** `ExternalDispatcher`
-  - `ExternalDispatcher` **HAS-A** `ElevatorSelectionStrategy` & `List<ElevatorController>`
-  - `InternalDispatcher` **HAS-A** `List<ElevatorController>`
+  - `Building` (Aggregate Root) **HAS-A** `List<Floor>`, `List<ElevatorController>` (owns elevators), & `ExternalDispatcher`
+  - `Floor` **HAS-A** `ExternalDispatcher` (injected by Building)
+  - `ExternalDispatcher` **HAS-A** `ElevatorSelectionStrategy` & `List<ElevatorController>` (shared building controllers)
+  - `ElevatorController` **HAS-A** `ElevatorCar`, `upMinPQ`, & `downMaxPQ`
   - `ElevatorCar` **HAS-A** `ElevatorDisplay`, `InternalButtons`, `ElevatorDoor`, `Direction`, & `ElevatorState`
   - `InternalButtons` **HAS-A** `InternalDispatcher`
-  - `ElevatorController` **HAS-A** `ElevatorCar`, `upMinPQ`, & `downMaxPQ`
 - **Invocation**:
   ```java
-  // Hall Call from floor 3
-  Floor floor3 = building.getAllFloorList().get(2);
-  floor3.pressButton(Direction.UP); // ExternalDispatcher routes via Strategy to controller 1
+  List<Floor> floors = List.of(new Floor(1), new Floor(2), new Floor(3), new Floor(4), new Floor(5));
+  List<ElevatorController> controllers = ElevatorCreator.createElevatorControllers(2);
+  Building building = new Building(floors, controllers, new NearestElevatorSelectionStrategy());
 
-  // Inside Elevator 1, passenger picks floor 5
-  ElevatorCar car = ElevatorCreator.elevatorControllerList.get(0).elevatorCar;
-  car.pressButton(5); // InternalDispatcher queues into upMinPQ
-  ElevatorCreator.elevatorControllerList.get(0).controlElevator();
+  // Hall Call: Passenger at Floor 3 calls UP
+  building.getAllFloorList().get(2).pressButton(Direction.UP);
+  ElevatorController controller1 = building.getElevatorControllerList().get(0);
+  controller1.controlElevator();
+
+  // Inside Elevator 1: Passenger selects Floor 5
+  controller1.elevatorCar.pressButton(5);
+  controller1.controlElevator();
   ```
 
 ---

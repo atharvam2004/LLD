@@ -5,18 +5,18 @@ import java.util.List;
 
 public class ElevatorCreator {
 
-    public static List<ElevatorController> elevatorControllerList = new ArrayList<>();
-    static {
-
-        ElevatorCar elevatorCar1 = new ElevatorCar();
-        elevatorCar1.id = 1;
-        ElevatorController controller1 = new ElevatorController(elevatorCar1);
-
-        ElevatorCar elevatorCar2 = new ElevatorCar();
-        elevatorCar2.id = 2;
-        ElevatorController controller2 = new ElevatorController(elevatorCar2);
-
-        elevatorControllerList.add(controller1);
-        elevatorControllerList.add(controller2);
+    // Factory method to instantiate and wire an elevator bank of size count
+    public static List<ElevatorController> createElevatorControllers(int count) {
+        List<ElevatorController> controllers = new ArrayList<>();
+        for (int i = 1; i <= count; i++) {
+            ElevatorCar car = new ElevatorCar();
+            car.id = i;
+            ElevatorController controller = new ElevatorController(car);
+            controllers.add(controller);
+        }
+        return controllers;
     }
+
+    // Default 2-elevator bank
+    public static List<ElevatorController> elevatorControllerList = createElevatorControllers(2);
 }
