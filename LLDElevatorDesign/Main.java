@@ -29,8 +29,9 @@ public class Main {
         Building building = new Building(floorList, elevatorControllers, new NearestElevatorSelectionStrategy());
 
         System.out.println("=== Clean Architecture: Elevators Belong to the Building ===");
-        System.out.println("Building initialized with " + building.getAllFloorList().size() + " floors and "
-                + building.getElevatorControllerList().size() + " elevator controllers.");
+        int totalFloors = building.getAllFloorList().size();
+        int totalElevators = building.getElevatorControllerList().size();
+        System.out.println("Building initialized with " + totalFloors + " floors and " + totalElevators + " elevator controllers.");
 
         // 4. Passenger at Floor 3 calls an elevator going UP
         System.out.println("\n--- 1. Hall Call: Passenger at Floor 3 presses UP ---");
