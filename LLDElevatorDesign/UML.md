@@ -280,9 +280,10 @@ classDiagram
 | Owner Class | Owned / Referenced Component | Multiplicity | Association Type | Purpose |
 |---|---|---|---|---|
 | `Building` | `Floor` | `1..*` | **Composition (`*--`)** | Building owns and lifecycle-manages floors. |
-| `Floor` | `ExternalDispatcher` | `1` | **Composition (`*--`)** | Each floor uses a dispatcher to broadcast hall calls. |
+| `Building` | `ElevatorController` | `1..*` | **Composition (`*--`)** | Building owns the elevator cars and their controllers (building-level asset). |
+| `Floor` | `ExternalDispatcher` | `1` | **Aggregation (`o--`)** | Floor references a shared or injected ExternalDispatcher to broadcast hall calls. |
 | `ExternalDispatcher` | `ElevatorSelectionStrategy` | `1` | **Aggregation (`o--`)** | Strategy injected to dynamically choose an elevator. |
-| `ExternalDispatcher` | `ElevatorController` | `1..*` | **Aggregation (`o--`)** | References available elevator controllers to route calls. |
+| `ExternalDispatcher` | `ElevatorController` | `1..*` | **Aggregation / Shared Ref (`o--`)** | Shared reference to the building's controllers (all floors see the SAME controllers). |
 | `ElevatorCar` | `ElevatorDisplay` | `1` | **Composition (`*--`)** | Display physically mounted on car. |
 | `ElevatorCar` | `ElevatorDoor` | `1` | **Composition (`*--`)** | Physical motorized door attached to car. |
 | `ElevatorCar` | `InternalButtons` | `1` | **Composition (`*--`)** | Keypad panel inside elevator car. |
@@ -331,3 +332,96 @@ classDiagram
 - **Participants**:
   - `ElevatorCreator`: Factory helper initializing `ElevatorCar` and `ElevatorController` instances and pooling them in `elevatorControllerList`.
 - **Why It's Used**: Centralizes creation and wiring of hardware components before simulation starts.
+
+---
+
+## 6. Architectural Relationship Deep Dive: Controller Sharing & Building Topology
+
+### 6.1 The Core Question: Are Controllers Duplicated per Floor?
+When looking at [ExternalDispatcher.java](file:///c:/Users/meher/OneDrive/Desktop/src/main/java/com/conceptandcoding/LowLevelDesign/LLDElevatorDesign/ExternalDispatcher.java#L8-L9):
+```java
+List<ElevatorController> elevatorControllerList = ElevatorCreator.elevatorControllerList;
+```
+And [Floor.java](file:///c:/Users/meher/OneDrive/Desktop/src/main/java/com/conceptandcoding/LowLevelDesign/LLDElevatorDesign/Floor.java#L10):
+```java
+public Floor(int floorNumber){
+    this.floorNumber = floorNumber;
+    externalDispatcher = new ExternalDispatcher();
+}
+```
+**Does every floor create its own list of elevators?**
+- **In Memory (Runtime)**: **No, they share the same list.** In Java, `ElevatorCreator.elevatorControllerList` is a `static` list on heap. When each `Floor` creates a `new ExternalDispatcher()`, its `elevatorControllerList` field simply holds a **reference pointer** to the exact same shared list of controllers. Changes made by Floor 1 (e.g. queuing a request) are immediately visible to Floor 2.
+- **Architecturally (Design Quality)**: **Having each floor instantiate its own dispatcher pointing to a global static list is a code smell.** Elevators are building-level assets, not floor-level assets.
+
+---
+
+### 6.2 The Clean Architectural Model: Building as the Aggregate Root
+
+In clean Object-Oriented Design (and standard LLD interview expectations), elevator controllers belong at the **Building level**:
+
+```
++====================================================================================================+
+|                                    CLEAN TOPOLOGY: BUILDING AGGREGATE ROOT                         |
++====================================================================================================+
+
+                                      +------------------------------------+
+                                      | Building                           |
+                                      +------------------------------------+
+                                      | - floorList: List<Floor>           |
+                                      | - elevatorControllers: List<Ctrl>  | <--- OWNS ELEVATORS
+                                      | - externalDispatcher: ExtDispatcher| <--- SHARED DISPATCHER
+                                      +------------------------------------+
+                                             |                      |
+                    1..* HAS-A (Composition) |                      | 1..* HAS-A (Composition)
+                                             v                      v
+                             +-------------------+     +-------------------------+
+                             | Floor             |     | ElevatorController      |
+                             +-------------------+     +-------------------------+
+                             | - floorNumber: int|     | - elevatorCar: Car      |
+                             +-------------------+     | - upMinPQ / downMaxPQ   |
+                                     |                 +-------------------------+
+                                     |                             ^
+                                     | delegates hall call         | routes to shared
+                                     v                             | controllers
+                             +-------------------------------------+
+                             | Shared ExternalDispatcher           |
+                             +-------------------------------------+
+                             | - selectionStrategy: Strategy       |
+                             | - controllers: List<ElevatorCtrl>   |
+                             +-------------------------------------+
+```
+
+#### Why Elevators Must Be at the Building Level:
+1. **Single Source of Truth**:
+   The elevators move across multiple floors. To know where an elevator is (current floor, direction, queue length), all floors must query the **same coordinated controller instances**.
+2. **Multi-Building Support**:
+   If your system models a corporate campus with `Building A` and `Building B`, each building must have its own bank of elevators. Using global `static` lists breaks multi-building support because all buildings would mistakenly share the same elevators.
+3. **Dependency Injection**:
+   Rather than each `Floor` blindly doing `new ExternalDispatcher()` with static lookups, `Building` creates a single shared `ExternalDispatcher` and injects it into each `Floor`:
+   ```java
+   // Clean Dependency Injection:
+   public class Building {
+       List<Floor> floors;
+       List<ElevatorController> controllers;
+       ExternalDispatcher externalDispatcher;
+
+       public Building(int numFloors, List<ElevatorController> controllers) {
+           this.controllers = controllers;
+           this.externalDispatcher = new ExternalDispatcher(controllers, new NearestElevatorSelectionStrategy());
+           this.floors = new ArrayList<>();
+           for (int i = 1; i <= numFloors; i++) {
+               floors.add(new Floor(i, this.externalDispatcher)); // All floors share ONE dispatcher
+           }
+       }
+   }
+   ```
+
+---
+
+### 6.3 Relationship Summary Matrix
+
+| Approach | Where Controllers Live | How Floors Access Them | Pros & Cons |
+|---|---|---|---|
+| **Starter Code (Static Pool)** | `ElevatorCreator` (`static List`) | Each `Floor` does `new ExternalDispatcher()` reading static list | Quick to write for simple demo; tightly coupled to static class; fails for multiple buildings. |
+| **Recommended LLD (Building Aggregate)** | `Building` (`List<ElevatorController>`) | `Building` injects shared `ExternalDispatcher` into each `Floor` | **Production standard**: Clean lifecycle, zero static leakage, single source of truth, testable. |
+
