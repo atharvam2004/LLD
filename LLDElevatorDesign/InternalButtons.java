@@ -1,26 +1,29 @@
 package com.conceptandcoding.LowLevelDesign.LLDElevatorDesign;
 
+/**
+ * InternalButtons — the physical keypad inside the elevator car.
+ *
+ * Physical analogy: the brass/plastic number buttons on the cabin wall.
+ * - Holds the list of valid floor buttons (1-10).
+ * - Validates the pressed floor.
+ * - Directly tells the car's own ElevatorController about the destination.
+ *   No dispatcher middleman needed: the car always knows its own controller.
+ *
+ * Flow: Passenger presses button → InternalButtons.pressButton()
+ *       → elevatorCar.getElevatorController().submitInternalRequest(floor)
+ */
 public class InternalButtons {
 
-    InternalDispatcher dispatcher;
     int[] availableButtons = {1, 2, 3, 4, 5, 6, 7, 8, 9, 10};
     int buttonSelected;
 
-    public InternalButtons() {
-        this.dispatcher = new InternalDispatcher();
-    }
-
-    public InternalButtons(InternalDispatcher dispatcher) {
-        this.dispatcher = dispatcher;
-    }
-
-    public void setDispatcher(InternalDispatcher dispatcher) {
-        this.dispatcher = dispatcher;
-    }
-
     public void pressButton(int destination, ElevatorCar elevatorCar) {
-        if (dispatcher != null) {
-            dispatcher.submitInternalRequest(destination, elevatorCar);
+        this.buttonSelected = destination;
+        // Direct call: button → car's controller (no dispatcher needed)
+        if (elevatorCar != null && elevatorCar.getElevatorController() != null) {
+            elevatorCar.getElevatorController().submitInternalRequest(destination);
+        } else {
+            System.err.println("Elevator controller not available for internal request.");
         }
     }
 }

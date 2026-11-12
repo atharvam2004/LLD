@@ -77,6 +77,56 @@ The **Elevator System** coordinates multi-car vertical transportation across flo
 
 ---
 
+## 2b. Component Overview (What Each Class Physically Represents)
+
+`
++-------------------------------------------------------------+
+| Building (The physical skyscraper)                          |
+| - Owns all floors AND all elevators (building-level asset)  |
+| - Injects shared ExternalDispatcher into every floor        |
++-------------------------------------------------------------+
+        |                                        |
+        v                                        v
++---------------------------+    +-------------------------------+
+| Floor (A physical level)  |    | ElevatorController            |
+| - Has hall call buttons   |    | (The server/brain in the      |
+|   (UP / DOWN panel)       |    |  motor room)                  |
+| - References shared       |    | - Controls motor              |
+|   ExternalDispatcher      |    | - upMinPQ (Min-Heap for UP)   |
++---------------------------+    | - downMaxPQ (Max-Heap for DN) |
+        |                        | - SCAN scheduling algorithm   |
+        v hall call              +-------------------------------+
++---------------------------+                 |
+| ExternalDispatcher        |                 | 1:1 owns
+| (The building intercom /  |                 v
+|  dispatch desk)           |    +-------------------------------+
+| - Picks best elevator via |    | ElevatorCar                   |
+|   ElevatorSelectionStrategy    | (The physical cabin)          |
+| - Routes to controller    |    | - currentFloor, direction     |
++---------------------------+    | - ElevatorDisplay (screen)    |
+                                 | - ElevatorDoor (motor door)   |
+                                 | - InternalButtons (keypad)    |
+                                 +-------------------------------+
+                                              |
+                                              v composes
+                            +------------------------------------+
+                            | InternalButtons                    |
+                            | (The brass/plastic keypad inside)  |
+                            | - availableButtons = {1..10}       |
+                            | - Validates destination floor      |
+                            | - Directly signals car controller: |
+                            |   car.getElevatorController()      |
+                            |   .submitInternalRequest(dest)     |
+                            +------------------------------------+
+`
+
+> [!NOTE]
+> InternalDispatcher has been **removed**. Previously it was an extra middleman between
+> InternalButtons and ElevatorController. Since each ElevatorCar has a 1:1 relationship
+> with its controller, InternalButtons now calls the controller directly — simpler, cleaner, no circular dependency.
+
+---
+
 ## 3. Mermaid UML Class Diagram (Strict Renderer Syntax)
 
 ```mermaid
@@ -160,16 +210,10 @@ classDiagram
 
     class InternalButtons {
         <<class>>
-        -InternalDispatcher dispatcher
         -int[] availableButtons
         +pressButton(int destination, ElevatorCar elevatorCar) void
     }
 
-    class InternalDispatcher {
-        <<class>>
-        -List~ElevatorController~ elevatorControllerList
-        +submitInternalRequest(int floor, ElevatorCar elevatorCar) void
-    }
 
     class ElevatorDisplay {
         <<class>>
@@ -198,7 +242,6 @@ classDiagram
     ElevatorCar *-- ElevatorDisplay : has
     ElevatorCar *-- ElevatorDoor : has
     ElevatorCar *-- InternalButtons : has
-    InternalButtons *-- InternalDispatcher : has
 ```
 
 ---

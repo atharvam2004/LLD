@@ -24,6 +24,14 @@ public class ElevatorCar {
         display.showDisplay();
     }
 
+    public ElevatorController getElevatorController() {
+        return elevatorController;
+    }
+
+    public void setElevatorController(ElevatorController elevatorController) {
+        this.elevatorController = elevatorController;
+    }
+
     public void pressButton(int destination) {
         internalButtons.pressButton(destination, this);
     }
