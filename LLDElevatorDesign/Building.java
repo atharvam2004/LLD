@@ -5,9 +5,9 @@ import java.util.List;
 
 public class Building {
 
-    private List<Floor> floorList;
-    private List<ElevatorController> elevatorControllerList;
-    private ExternalDispatcher externalDispatcher;
+    public List<Floor> floorList;
+    public List<ElevatorController> elevatorControllerList;
+    public ExternalDispatcher externalDispatcher;
 
     public Building(List<Floor> floors, List<ElevatorController> controllers) {
         this(floors, controllers, new OddEvenSelectionStrategy());
